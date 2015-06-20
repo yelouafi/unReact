@@ -62,7 +62,7 @@ When the user clicks for example on the `-` button, the app *publishes* the `dec
 
 When the view function invokes the `counter()` getter, the `counter` behavior *matches* the current message with its 2 subscriptions, since the the current message `dec$` matches its second subscription, it'll *update* itself.
 
-The benefit is that a behavior can invoke other behaviors during its evaluation without being forced to list explicit dependencies. The order of things is automatically maintained by the functional dependencies and there is also no memory leaks since there is no leaky references, all references are from the consumer (behavior) (as you said GC favours pull based evaluation)
+The benefit is that a behavior can invoke other behaviors during its evaluation without being forced to list explicit dependencies. The order of things is automatically maintained by the functional dependencies and there is also no memory leaks since there is no leaky references, all references are from the consumer (behavior)ز
 
 For more examples of use [see here](https://github.com/yelouafi/unReact/tree/master/examples).
 
