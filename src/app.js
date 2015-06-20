@@ -45,6 +45,8 @@ function Beh(app, f) {
   b.$$beh = true;
   b.keepAlive = () => { eagerBehs.push(b); return b; };
   
+  b.map = f => Beh(app, () => f(b()));
+  
   b.switch = sub => {
     let curB = b, updated;
     return Beh(app, function() {
