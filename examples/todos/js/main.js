@@ -11,7 +11,7 @@ const toggleAll$ = app.on('toggleAll$').map( ev => ev.target.checked );
 const enter$ = app.on('keydown$').filter(ev => ev.keyCode === 13);
 
 app.todos = app.arrayB({
-  add     : enter$.map(value).map( title => task(app, ++id, title, toggleAll$ )),
+  add     : enter$.map(value).map( title => task(++id, title, toggleAll$ )),
   remove  : post.on('remove$'),
   other   : app.on('clearDone$').map(() => leftTodos)
 });
@@ -29,30 +29,31 @@ app.view = () => {
         filteredTodos = app.activeView() === 'all'   ? todos
                       : app.activeView() === 'active' ? todos.filter( todo => !todo.done())
                                                 : todos.filter( todo => todo.done())
-  return h('section.todoapp', [
-    h('header.header', [
+  return h('section#todoapp', [
+    h('header#header', [
       h('h1', 'todos'),
-      h('input.new-todo', {
+      h('input#new-todo', {
         props: {placeholder: 'What needs to be done?', value: app.input()},
         on: { keydown: app.publish('keydown$')},
       }),
     ]),
-    h('section.main', {
+    h('section#main', {
       style: {display: hasTodos ? 'block' : 'none'}
     }, [
-      h('input.toggle-all', {props: {type: 'checkbox', checked: left === 0}, on: {click: app.publish('toggleAll$')}}),
-      h('ul.todo-list', filteredTodos.map( todo => todo.view() )),
+      h('input#toggle-all', {props: {type: 'checkbox', checked: left === 0}, on: {click: app.publish('toggleAll$')}}),
+      h('label', {props:{ for: 'toggle-all'}}, 'Mark all as completed'),
+      h('ul#todo-list', filteredTodos.map( todo => todo.view() )),
     ]),
-    h('footer.footer', {
+    h('footer#footer', {
       style: {display: hasTodos ? 'block' : 'none'}
     }, [
-      h('span.todo-count', [h('strong', left), ` item${left === 1 ? '' : 's'} left`]),
-      h('ul.filters', [
+      h('span#todo-count', [h('strong', left), ` item${left === 1 ? '' : 's'} left`]),
+      h('ul#filters', [
         h('li', [h('a', {class: {selected: app.activeView() === 'all'}, props: {href: '#/'}}, 'All')]),
         h('li', [h('a', {class: {selected: app.activeView() === 'active'}, props: {href: '#/active'}}, 'Active')]),
         h('li', [h('a', {class: {selected: app.activeView() === 'completed'}, props: {href: '#/completed'}}, 'Completed')]),
       ]),
-      h('button.clear-completed', {on: {click: app.publish('clearDone$')}}, 'Clear completed'),
+      h('button#clear-completed', {on: {click: app.publish('clearDone$')}}, 'Clear completed'),
     ])
   ]);
 };

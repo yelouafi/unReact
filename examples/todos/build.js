@@ -36,7 +36,7 @@ var enter$ = app.on('keydown$').filter(function (ev) {
 
 app.todos = app.arrayB({
   add: enter$.map(value).map(function (title) {
-    return (0, _task2['default'])(app, ++id, title, toggleAll$);
+    return (0, _task2['default'])(++id, title, toggleAll$);
   }),
   remove: post.on('remove$'),
   other: app.on('clearDone$').map(function () {
@@ -97,16 +97,16 @@ var _snabbdomH = require('snabbdom/h');
 
 var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
 
-function task(parent, id, title, toggleAll$) {
+function task(id, title, toggleAll$) {
 
-  var app = new _srcApp2['default'](parent),
+  var app = new _srcApp2['default'](),
       post = _srcApp2['default'].post;
 
   app.id = id;
   app.title = app.scanB(function (_, ev) {
     return ev.target.value;
   }, title, app.on('enter$'));
-  app.done = app.when(false, [app.on('toggle$'), function (_, v) {
+  app.done = app.when(false, [app.on('toggle$'), function (v, _) {
     return !v;
   }, toggleAll$, function (_, v) {
     return v;

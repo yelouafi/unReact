@@ -1,14 +1,14 @@
 import App from '../../../src/app';
 import h from 'snabbdom/h';
 
-function task(parent, id, title, toggleAll$) {
+function task(id, title, toggleAll$) {
 
-  const app = new App(parent), post = App.post;
+  const app = new App(), post = App.post;
   
   app.id = id;
   app.title = app.scanB((_, ev) => ev.target.value, title, app.on('enter$'));
   app.done = app.when(false, [
-    app.on('toggle$'), (_, v) => !v,
+    app.on('toggle$'), (v, _) => !v,
     toggleAll$, (_, v) => v
   ]);
   
