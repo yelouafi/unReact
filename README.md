@@ -15,16 +15,16 @@ Wait, if there is no event notification, how can we update our app state ? How c
 
 React and similar frameworks use a *push* model for event handling, ie. when a DOM event is fired, the framework notifies all liseteners for that event, so the event is pushed on the application. Put simply, the model is:
 
-1- a dom event is fired
-2- event listeners are notified (the push phase)
-3- event listeners updates the application state
-4- the system re-evaluates the view function and patches the DOM
+1- a dom event is fired  
+2- event listeners are notified (the push phase)  
+3- event listeners updates the application state  
+4- the system re-evaluates the view function and patches the DOM  
 
 unReact uses a *pull* based model for events, when an event fires, the event is not forwarded to listeners (there are no listeners in unReact) but instead *published* on a central place. When the framework re-render the UI, interested subscribers, called *Behaviors* can check against the published event to decide if an update should take place. In other terms events are *pulled* during the view evaluation phase.  
 
-1- a DOM event is fired
-3- a message is published on the application
-4- the system re-evaluates the view function and patches the DOM (the pull phase)
+1- a DOM event is fired  
+3- a message is published on the application  
+4- the system re-evaluates the view function and patches the DOM (the pull phase)  
 
 So in practice, we're not really un-reactive, we just react to event in *lazy* way.
 
