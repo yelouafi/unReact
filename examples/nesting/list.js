@@ -1,11 +1,11 @@
 import App from '../../src/app';
 import h from 'snabbdom/h';
 
-function list(parent, comp, params, actions) {
+function list(comp, params, actions) {
   
-  const app = new App(parent);
+  const app = new App();
   app.name = 'list';
-  const newComp = () => comp(app, params);
+  const newComp = () => comp(params);
   const items = app.arrayB({
     add     : app.on('add$').map(newComp),
     reverse : app.on('reverse$')

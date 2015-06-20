@@ -6,7 +6,7 @@ const app = new App(),
       
       reset$ = app.on('reset$'),
       counters = app.when([], [
-        app.on('add$')      , arr => arr.concat(counter(app, reset$)),
+        app.on('add$')      , arr => arr.concat(counter(reset$)),
         app.on('remove$')   , arr => arr.slice(1)
       ])
 

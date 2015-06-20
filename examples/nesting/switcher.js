@@ -1,9 +1,9 @@
 import App from '../../src/app';
 import h from 'snabbdom/h';
 
-function switcher(parent, n) {
+function switcher(n) {
   
-  const app = new App(parent);
+  const app = new App();
   app.name = 'switcher';
   const model = app.scanB( n => 1-n, n, app.on('toggle$') );
 

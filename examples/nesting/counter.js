@@ -1,9 +1,9 @@
 import App from '../../src/app';
 import h from 'snabbdom/h';
 
-function counter(parent, reset$) {
+function counter(reset$) {
 
-  const app = new App(parent);
+  const app = new App();
   
   const counter = app.when(0, [
     app.on('inc$'), acc => acc+1,

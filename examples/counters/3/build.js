@@ -15,9 +15,9 @@ var _snabbdomH = require('snabbdom/h');
 
 var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
 
-function counter(parent, reset$) {
+function counter(reset$) {
 
-  var app = new _srcApp2['default'](parent);
+  var app = new _srcApp2['default']();
 
   var counter = app.when(0, [app.on('inc$'), function (acc) {
     return acc + 1;
@@ -64,7 +64,7 @@ var _counter2 = _interopRequireDefault(_counter);
 var app = new _srcApp2['default'](),
     reset$ = app.on('reset$'),
     counters = app.when([], [app.on('add$'), function (arr) {
-  return arr.concat((0, _counter2['default'])(app, reset$));
+  return arr.concat((0, _counter2['default'])(reset$));
 }, app.on('remove$'), function (arr) {
   return arr.slice(1);
 }]);
@@ -523,6 +523,13 @@ function doPostPatch() {
   postPatchQueue = [];
 }
 
+var eagerBehs = [];
+function updatedEagerBehs() {
+  for (var i = 0, len = eagerBehs.length; i < len; i++) {
+    eagerBehs[i]();
+  }
+}
+
 // t : Number
 // B a : t -> a
 // Beh : (App, () -> a) -> B a
@@ -533,6 +540,9 @@ function Beh(app, f) {
   }
 
   b.$$beh = true;
+  b.keepAlive = function () {
+    eagerBehs.push(b);return b;
+  };
 
   b['switch'] = function (sub) {
     var curB = b,
@@ -574,13 +584,6 @@ var App = (function () {
 
   function App(parent) {
     _classCallCheck(this, App);
-
-    this.parent = parent;
-    this.event = new _event2['default'](this, '$init$', Date.now(), 0);
-    this.observables = {};
-    var root = parent;
-    while (root && root.parent) root = root.parent;
-    this.root = root;
   }
 
   _createClass(App, [{
@@ -600,6 +603,7 @@ var App = (function () {
     value: function mount(elm) {
       elm = elm instanceof Element ? elm : document.querySelector(elm);
       if (!(elm instanceof Element)) throw 'App.mount need a valid DOM Element as argument';
+      App.root = this;
       this.elm = patch(elm, this.view());
     }
   }, {
@@ -609,8 +613,9 @@ var App = (function () {
 
       var hasData = arguments.length > 1;
       return function (ev) {
-        var root = _this.root || _this;
+        var root = App.root;
         root.event = new _event2['default'](id, _this, Date.now(), hasData ? data : ev);
+        updatedEagerBehs();
         if (root.elm) root.elm = patch(root.elm, root.view());
       };
     }
@@ -622,23 +627,25 @@ var App = (function () {
       var hasData = arguments.length > 2;
       return function (ev) {
         if (!pred(ev)) return;
-        var root = _this2.root || _this2;
+        var root = App.root;
         root.event = new _event2['default'](id, _this2, Date.now(), hasData ? data : ev);
+        updatedEagerBehs();
         if (root.elm) root.elm = patch(root.elm, root.view());
       };
     }
   }, {
     key: 'findEvent',
     value: function findEvent(sub) {
-      if (sub.event) return sub.event;
-      if (this.root) return this.root.findEvent(sub);
-      if (sub.match(this.event)) {
-        sub.event = this.event;
-        onPostPacth(function () {
-          return sub.event = null;
-        });
-        return sub.handler(this.event);
+      if (!sub.event) {
+        var root = App.root;
+        if (sub.match(root.event)) {
+          sub.event = sub.handler(root.event);
+          onPostPacth(function () {
+            return sub.event = null;
+          });
+        }
       }
+      return sub.event;
     }
   }, {
     key: 'B',
@@ -738,7 +745,7 @@ var App = (function () {
   return App;
 })();
 
-App.h = _snabbdomH2['default'];
+App.post = new App();
 
 exports['default'] = App;
 module.exports = exports['default'];
@@ -867,12 +874,11 @@ var Subscription = (function () {
 
     _classCallCheck(this, Subscription);
 
-    this.lastT = 0;
     this.id = id;
     this.app = app;
     this.handler = (0, _base.Fn)(handler);
     this.match = match || function (ev) {
-      return ev.id === _this.id && _this.app === ev.app;
+      return ev && ev.id === _this.id && _this.app === ev.app;
     };
   }
 
@@ -886,7 +892,7 @@ var Subscription = (function () {
       f = (0, _base.Fn)(f);
       return new Subscription(this.id, this.app, function (ev) {
         return _this2.handler(ev).map(f);
-      });
+      }, this.match);
     }
   }, {
     key: "filter",

@@ -8,8 +8,8 @@ import switcher from './switcher';
 const app = new App();
 
 const counterActions = [h('button', {on: {click: app.publish('reset$')}}, 'Reset')];
-const counterList = list(app, counter, app.on('reset$'), counterActions);
-const switchList = list(app, switcher, 1);
+const counterList = list(counter, app.on('reset$'), counterActions);
+const switchList = list(switcher, 1);
 
 const tabs = [counterList, switchList];
 const activeTab = app.scanB((_, idx) => idx, 0, app.on('changeTab$'));

@@ -3,7 +3,7 @@ import h from 'snabbdom/h';
 import attachTo from 'snabbdom/helpers/attachto';
 
 function modal(parent) {
-  const app = new App(parent);
+  const app = new App();
 
   app.view = vnodeArray =>
     attachTo(document.body, h('div.modal', {}, [

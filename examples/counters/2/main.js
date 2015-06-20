@@ -4,8 +4,8 @@ import counter from './counter';
 
 const app = new App(), 
       reset$ = app.on('reset$'),
-      topCounter = counter(app, reset$),
-      bottomCounter = counter(app, reset$);
+      topCounter = counter(reset$),
+      bottomCounter = counter(reset$);
 
 
 app.view = () =>

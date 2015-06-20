@@ -4,7 +4,7 @@ import modal from './modal';
 
 const app = new App(),
       
-      myModal = modal(app),
+      myModal = modal(),
       isModalOpen = app.when(false, [
         app.on('open$'), _ => true,  
         app.on('close$'), _ => false
