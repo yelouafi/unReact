@@ -1,9 +1,12 @@
 {
-  "name": "nant2",
-  "version": "0.0.0",
-  "description": "HTML templates using JavaScript",
+  "name": "unReact",
+  "version": "0.1.0",
+  "description": "Pull FRP frontend for JavaScript",
   "main": "nant2.js",
-  "repository": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yelouafi/unReact.git"
+  },
   "author": "Yassine Elouafi <yelouafi@gmail.com>",
   "dependencies": {
     "snabbdom": "^0.2.0"
