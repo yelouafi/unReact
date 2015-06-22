@@ -161,7 +161,7 @@ class App {
   }
   
   // cases : [(Subscription a , a -> b)]
-  when(acc, cases) {
+  when(acc, cases) { 
     let updated, events = [], fns = [];
     for(var i=0; i < cases.length-1; i+=2) {
       events.push(cases[i]);
