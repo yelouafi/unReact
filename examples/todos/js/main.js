@@ -24,11 +24,10 @@ window.addEventListener("hashchange", app.publish('viewChange$') );
 app.view = () => {
   const todos = app.todos(),
         hasTodos = todos.length,
-        dones = todos.map( todo => todo.done() ),
-        left = dones.reduce((acc, done) => acc + (!done ? 1 : 0), 0),
+        left = todos.reduce((acc, todo) => acc + (!todo.done() ? 1 : 0), 0),
         filteredTodos = app.activeView() === 'all'   ? todos
-                      : app.activeView() === 'active' ? dones.filter( done => !done)
-                                                : todos.filter( done => done)
+                      : app.activeView() === 'active' ? todos.filter( todo => !todo.done())
+                                                      : todos.filter( todo => todo.done())
   return h('section.todoapp', [
     h('header.header', [
       h('h1', 'todos'),

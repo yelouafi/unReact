@@ -56,16 +56,13 @@ window.addEventListener('hashchange', app.publish('viewChange$'));
 app.view = function () {
   var todos = app.todos(),
       hasTodos = todos.length,
-      dones = todos.map(function (todo) {
-    return todo.done();
-  }),
-      left = dones.reduce(function (acc, done) {
-    return acc + (!done ? 1 : 0);
+      left = todos.reduce(function (acc, todo) {
+    return acc + (!todo.done() ? 1 : 0);
   }, 0),
-      filteredTodos = app.activeView() === 'all' ? todos : app.activeView() === 'active' ? dones.filter(function (done) {
-    return !done;
-  }) : todos.filter(function (done) {
-    return done;
+      filteredTodos = app.activeView() === 'all' ? todos : app.activeView() === 'active' ? todos.filter(function (todo) {
+    return !todo.done();
+  }) : todos.filter(function (todo) {
+    return todo.done();
   });
   return (0, _snabbdomH2['default'])('section.todoapp', [(0, _snabbdomH2['default'])('header.header', [(0, _snabbdomH2['default'])('h1', 'todos'), (0, _snabbdomH2['default'])('input#new-todo.new-todo', {
     props: { placeholder: 'What needs to be done?', value: app.input() },
