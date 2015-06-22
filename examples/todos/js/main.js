@@ -16,44 +16,43 @@ app.todos = app.arrayB({
   other   : app.on('clearDone$').map(() => leftTodos)
 });
 
-app.input = app.scanB((_, e) => e.keyCode === 13 ? '' : e.target.value  ,'', app.on('keydown$'))
+app.input = app.scanB((_, e) => e.keyCode === 13 ? '' : e.target.value  ,'', app.on('keydown$'));
 app.activeView = app.scanB(() => window.location.hash.substr(2) || 'all', 'all', app.on('viewChange$'));
 
 window.addEventListener("hashchange", app.publish('viewChange$') );
 
-
 app.view = () => {
   const todos = app.todos(),
         hasTodos = todos.length,
-        left = todos.reduce((acc, todo) => acc + (!todo.done() ? 1 : 0), 0),
+        dones = todos.map( todo => todo.done() ),
+        left = dones.reduce((acc, done) => acc + (!done ? 1 : 0), 0),
         filteredTodos = app.activeView() === 'all'   ? todos
-                      : app.activeView() === 'active' ? todos.filter( todo => !todo.done())
-                                                : todos.filter( todo => todo.done())
-  return h('section#todoapp', [
-    h('header#header', [
+                      : app.activeView() === 'active' ? dones.filter( done => !done)
+                                                : todos.filter( done => done)
+  return h('section.todoapp', [
+    h('header.header', [
       h('h1', 'todos'),
-      h('input#new-todo', {
+      h('input#new-todo.new-todo', {
         props: {placeholder: 'What needs to be done?', value: app.input()},
         on: { keydown: app.publish('keydown$')},
       }),
     ]),
-    h('section#main', {
+    h('section.main', {
       style: {display: hasTodos ? 'block' : 'none'}
     }, [
-      h('input#toggle-all', {props: {type: 'checkbox', checked: left === 0}, on: {click: app.publish('toggleAll$')}}),
-      h('label', {props:{ for: 'toggle-all'}}, 'Mark all as completed'),
-      h('ul#todo-list', filteredTodos.map( todo => todo.view() )),
+      h('input.toggle-all', {props: {type: 'checkbox', checked: left === 0}, on: {click: app.publish('toggleAll$')}}),
+      h('ul.todo-list', filteredTodos.map( todo => todo.view() )),
     ]),
-    h('footer#footer', {
+    h('footer.footer', {
       style: {display: hasTodos ? 'block' : 'none'}
     }, [
-      h('span#todo-count', [h('strong', left), ` item${left === 1 ? '' : 's'} left`]),
-      h('ul#filters', [
+      h('span.todo-count', [h('strong', left), ` item${left === 1 ? '' : 's'} left`]),
+      h('ul.filters', [
         h('li', [h('a', {class: {selected: app.activeView() === 'all'}, props: {href: '#/'}}, 'All')]),
         h('li', [h('a', {class: {selected: app.activeView() === 'active'}, props: {href: '#/active'}}, 'Active')]),
         h('li', [h('a', {class: {selected: app.activeView() === 'completed'}, props: {href: '#/completed'}}, 'Completed')]),
       ]),
-      h('button#clear-completed', {on: {click: app.publish('clearDone$')}}, 'Clear completed'),
+      h('button.clear-completed', {on: {click: app.publish('clearDone$')}}, 'Clear completed'),
     ])
   ]);
 };

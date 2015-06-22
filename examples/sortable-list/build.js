@@ -11,20 +11,127 @@ var _snabbdomH = require('snabbdom/h');
 
 var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
 
-var app = new _srcApp2['default']();
-var yourName = app.step('', app.on('input$').map(function (e) {
-  return e.target.value;
-}));
+var _sortableList = require('./sortableList');
+
+var _sortableList2 = _interopRequireDefault(_sortableList);
+
+var app = new _srcApp2['default'](),
+    colors = ['Red', 'Green', 'Blue', 'Yellow', 'Black', 'White', 'Orange'],
+    colorList = (0, _sortableList2['default'])(colors);
 
 app.view = function () {
-  return (0, _snabbdomH2['default'])('div', [(0, _snabbdomH2['default'])('label', 'Name:'), (0, _snabbdomH2['default'])('input', { props: { type: 'text' }, on: { input: app.publish('input$') } }), (0, _snabbdomH2['default'])('hr'), (0, _snabbdomH2['default'])('h1', 'Hello ' + yourName())]);
+  return (0, _snabbdomH2['default'])('div', [colorList.view()]);
 };
 
 window.addEventListener('DOMContentLoaded', function () {
   app.mount('#container');
 });
 
-},{"../../src/app":10,"snabbdom/h":2}],2:[function(require,module,exports){
+},{"../../src/app":11,"./sortableList":2,"snabbdom/h":3}],2:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _srcApp = require('../../src/app');
+
+var _srcApp2 = _interopRequireDefault(_srcApp);
+
+var _snabbdomH = require('snabbdom/h');
+
+var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
+
+function sortableList(sItems) {
+
+  var ITEM_AFTER = '$$after$$';
+  var move = function move(arr, elm, srcIdx, targetIdx) {
+    var newIdx = srcIdx > targetIdx ? targetIdx : targetIdx - 1,
+        copy = arr.slice();
+
+    copy.splice(srcIdx, 1);
+    copy.splice(newIdx, 0, elm);
+    return copy;
+  };
+
+  var app = new _srcApp2['default'](),
+      dragStart$ = app.on('dragStart$').tap(function (ev) {
+    ev.domEvent.dataTransfer.effectAllowed = 'move';
+    ev.domEvent.dataTransfer.setData('text/html', ev.domEvent.currentTarget); // Firefox fix
+  }),
+      dragOver$ = app.on('dragOver$').tap(function (ev) {
+    ev.domEvent.preventDefault();
+  }),
+      dragEnd$ = app.on('dragEnd$'),
+      dragSource = app.step(null, dragStart$),
+      dragTarget = app.when(null, [dragOver$, function (prev, ev) {
+    var target = ev.target,
+        id = target.dataset.id;
+    if (id) {
+      if (id === 'placeholder') return prev;
+
+      var relY = ev.clientY - target.offsetTop;
+      var height = target.offsetHeight / 2;
+      if (relY <= height) return id;
+      var itms = items(),
+          idx = itms.indexOf(id) + 1;
+      return idx < itms.length ? itms[idx] : ITEM_AFTER;
+    }
+  }]),
+      isDragOver = app.when(false, [dragOver$, true, dragEnd$, false]),
+      items = app.scanB(function (acc, _) {
+    var source = dragSource(),
+        target = dragTarget(),
+        srcIdx = acc.indexOf(source),
+        targetIdx = target === ITEM_AFTER ? acc.length : acc.indexOf(target);
+
+    return srcIdx !== targetIdx && srcIdx >= 0 && targetIdx >= 0 ? move(acc, source, srcIdx, targetIdx) : acc;
+  }, sItems, dragEnd$);
+
+  function setDataId(oldVnode, vnode) {
+    vnode.elm.dataset.id = vnode.data.key;
+  }
+
+  var li = function li(it, i, source, isOver) {
+    return (0, _snabbdomH2['default'])('li', {
+      key: it,
+      style: { display: it === source && isOver ? 'none' : 'block' },
+      props: { draggable: true },
+      on: { dragstart: app.publish('dragStart$', it), dragend: app.publish('dragEnd$') },
+      hook: { create: setDataId }
+    }, it);
+  };
+
+  app.view = function () {
+    var aItems = items(),
+        source = dragSource(),
+        target = dragTarget(),
+        isOver = isDragOver(),
+        targetIdx = target === ITEM_AFTER ? aItems.length : aItems.indexOf(target);
+
+    var fstSection = targetIdx >= 0 && isOver ? aItems.slice(0, targetIdx) : aItems,
+        sndSection = targetIdx >= 0 && isOver ? aItems.slice(targetIdx) : [];
+
+    return (0, _snabbdomH2['default'])('ul', { on: { dragover: app.publish('dragOver$') } }, fstSection.map(function (it, i) {
+      return li(it, i, source, isOver);
+    }).concat((0, _snabbdomH2['default'])('li.placeholder', {
+      key: 'placeholder',
+      style: { display: targetIdx < 0 || !isOver ? 'none' : 'block' },
+      hook: { create: setDataId }
+    })).concat(sndSection.map(function (it, i) {
+      return li(it, i, source, isOver);
+    })));
+  };
+
+  return app;
+}
+
+exports['default'] = sortableList;
+module.exports = exports['default'];
+
+},{"../../src/app":11,"snabbdom/h":3}],3:[function(require,module,exports){
 var VNode = require('./vnode');
 var is = require('./is');
 
@@ -47,13 +154,13 @@ module.exports = function h(sel, b, c) {
   return VNode(sel, data, children, text, undefined);
 };
 
-},{"./is":3,"./vnode":9}],3:[function(require,module,exports){
+},{"./is":4,"./vnode":10}],4:[function(require,module,exports){
 module.exports = {
   array: Array.isArray,
   primitive: function(s) { return typeof s === 'string' || typeof s === 'number'; },
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 function updateClass(oldVnode, vnode) {
   var cur, name, elm = vnode.elm,
       oldClass = oldVnode.data.class || {},
@@ -68,7 +175,7 @@ function updateClass(oldVnode, vnode) {
 
 module.exports = {create: updateClass, update: updateClass};
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var is = require('../is');
 
 function arrInvoker(arr) {
@@ -107,7 +214,7 @@ function updateEventListeners(oldVnode, vnode) {
 
 module.exports = {create: updateEventListeners, update: updateEventListeners};
 
-},{"../is":3}],6:[function(require,module,exports){
+},{"../is":4}],7:[function(require,module,exports){
 function updateProps(oldVnode, vnode) {
   var key, cur, old, elm = vnode.elm,
       oldProps = oldVnode.data.props || {}, props = vnode.data.props || {};
@@ -122,7 +229,7 @@ function updateProps(oldVnode, vnode) {
 
 module.exports = {create: updateProps, update: updateProps};
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 var raf = requestAnimationFrame || setTimeout;
 var nextFrame = function(fn) { raf(function() { raf(fn); }); };
 
@@ -184,7 +291,7 @@ function applyRemoveStyle(vnode, rm) {
 
 module.exports = {create: updateStyle, update: updateStyle, destroy: applyDestroyStyle, remove: applyRemoveStyle};
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 // jshint newcap: false
 /* global require, module, document, Element */
 'use strict';
@@ -411,14 +518,14 @@ function init(modules) {
 
 module.exports = {init: init};
 
-},{"./is":3,"./vnode":9}],9:[function(require,module,exports){
+},{"./is":4,"./vnode":10}],10:[function(require,module,exports){
 module.exports = function(sel, data, children, text, elm) {
   var key = data === undefined ? undefined : data.key;
   return {sel: sel, data: data, children: children,
           text: text, elm: elm, key: key};
 };
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -640,7 +747,13 @@ var App = (function () {
     value: function when(acc, cases) {
       var _this4 = this;
 
-      var updated = undefined;
+      var updated = undefined,
+          events = [],
+          fns = [];
+      for (var i = 0; i < cases.length - 1; i += 2) {
+        events.push(cases[i]);
+        fns.push((0, _base.Fn)(cases[i + 1]));
+      }
       return this.B(function () {
         if (!updated) {
           var ev = undefined;
@@ -648,10 +761,10 @@ var App = (function () {
           onPostPacth(function () {
             return updated = false;
           });
-          for (var i = 0; i < cases.length - 1; i += 2) {
-            ev = _this4.findEvent(cases[i]);
+          for (var i = 0; i < events.length; i++) {
+            ev = _this4.findEvent(events[i]);
             if (ev) {
-              acc = cases[i + 1](acc, ev.data);
+              acc = fns[i](acc, ev.data);
               return acc;
             }
           }
@@ -708,7 +821,7 @@ App.post = new App();
 exports['default'] = App;
 module.exports = exports['default'];
 
-},{"./base":11,"./event":12,"./subscription":13,"snabbdom":8,"snabbdom/h":2,"snabbdom/modules/class":4,"snabbdom/modules/eventlisteners":5,"snabbdom/modules/props":6,"snabbdom/modules/style":7}],11:[function(require,module,exports){
+},{"./base":12,"./event":13,"./subscription":14,"snabbdom":9,"snabbdom/h":3,"snabbdom/modules/class":5,"snabbdom/modules/eventlisteners":6,"snabbdom/modules/props":7,"snabbdom/modules/style":8}],12:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -771,7 +884,7 @@ var remove = function remove(arr, el) {
 };
 exports.remove = remove;
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -811,7 +924,7 @@ var Event = (function () {
 exports["default"] = Event;
 module.exports = exports["default"];
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -897,4 +1010,4 @@ var Subscription = (function () {
 exports["default"] = Subscription;
 module.exports = exports["default"];
 
-},{"./base":11}]},{},[1]);
+},{"./base":12}]},{},[1]);

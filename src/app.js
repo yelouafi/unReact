@@ -1,6 +1,6 @@
 "use strict";
 
-import { Const, add, remove } from './base';
+import { Const, add, remove, Fn } from './base';
 import Event from './event';
 import Subscription from './subscription';
 import snabbdom from 'snabbdom';
@@ -104,7 +104,7 @@ class App {
     const hasData = arguments.length > 1;
     return ev => {
         let root = App.root;
-        root.event = new Event(id, this, Date.now(), hasData ? data : ev);
+        root.event = new Event(id, this, Date.now(), hasData ? data : ev, ev);
         updatedEagerBehs();
         if(root.elm)
           root.elm = patch(root.elm, root.view());
@@ -142,6 +142,10 @@ class App {
     return this.B( Const(v) );
   }
   
+  step(start, sub) {
+    return this.scanB((_, v) => v , start, sub)
+  }
+  
   scanB(f, acc, sub) {
     let updated;
     return this.B( () => {
@@ -158,16 +162,20 @@ class App {
   
   // cases : [(Subscription a , a -> b)]
   when(acc, cases) {
-    let updated;
+    let updated, events = [], fns = [];
+    for(var i=0; i < cases.length-1; i+=2) {
+      events.push(cases[i]);
+      fns.push(Fn(cases[i+1]));
+    }
     return this.B( () => {
       if(!updated) {
         let ev;
         updated = true;
         onPostPacth(() => updated = false);
-        for(var i=0; i < cases.length-1; i+=2) {
-          ev = this.findEvent(cases[i]);
+        for(var i=0; i < events.length; i++) {
+          ev = this.findEvent(events[i]);
           if(ev) {
-            acc = cases[i+1](acc, ev.data);
+            acc = fns[i](acc, ev.data);
             return acc;
           }
         } 

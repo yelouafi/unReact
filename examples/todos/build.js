@@ -56,15 +56,18 @@ window.addEventListener('hashchange', app.publish('viewChange$'));
 app.view = function () {
   var todos = app.todos(),
       hasTodos = todos.length,
-      left = todos.reduce(function (acc, todo) {
-    return acc + (!todo.done() ? 1 : 0);
-  }, 0),
-      filteredTodos = app.activeView() === 'all' ? todos : app.activeView() === 'active' ? todos.filter(function (todo) {
-    return !todo.done();
-  }) : todos.filter(function (todo) {
+      dones = todos.map(function (todo) {
     return todo.done();
+  }),
+      left = dones.reduce(function (acc, done) {
+    return acc + (!done ? 1 : 0);
+  }, 0),
+      filteredTodos = app.activeView() === 'all' ? todos : app.activeView() === 'active' ? dones.filter(function (done) {
+    return !done;
+  }) : todos.filter(function (done) {
+    return done;
   });
-  return (0, _snabbdomH2['default'])('section.todoapp', [(0, _snabbdomH2['default'])('header.header', [(0, _snabbdomH2['default'])('h1', 'todos'), (0, _snabbdomH2['default'])('input.new-todo', {
+  return (0, _snabbdomH2['default'])('section.todoapp', [(0, _snabbdomH2['default'])('header.header', [(0, _snabbdomH2['default'])('h1', 'todos'), (0, _snabbdomH2['default'])('input#new-todo.new-todo', {
     props: { placeholder: 'What needs to be done?', value: app.input() },
     on: { keydown: app.publish('keydown$') }
   })]), (0, _snabbdomH2['default'])('section.main', {
@@ -616,6 +619,12 @@ function Beh(app, f) {
     eagerBehs.push(b);return b;
   };
 
+  b.map = function (f) {
+    return Beh(app, function () {
+      return f(b());
+    });
+  };
+
   b['switch'] = function (sub) {
     var curB = b,
         updated = undefined;
@@ -686,7 +695,7 @@ var App = (function () {
       var hasData = arguments.length > 1;
       return function (ev) {
         var root = App.root;
-        root.event = new _event2['default'](id, _this, Date.now(), hasData ? data : ev);
+        root.event = new _event2['default'](id, _this, Date.now(), hasData ? data : ev, ev);
         updatedEagerBehs();
         if (root.elm) root.elm = patch(root.elm, root.view());
       };
@@ -730,6 +739,13 @@ var App = (function () {
       return this.B((0, _base.Const)(v));
     }
   }, {
+    key: 'step',
+    value: function step(start, sub) {
+      return this.scanB(function (_, v) {
+        return v;
+      }, start, sub);
+    }
+  }, {
     key: 'scanB',
     value: function scanB(f, acc, sub) {
       var _this3 = this;
@@ -754,7 +770,13 @@ var App = (function () {
     value: function when(acc, cases) {
       var _this4 = this;
 
-      var updated = undefined;
+      var updated = undefined,
+          events = [],
+          fns = [];
+      for (var i = 0; i < cases.length - 1; i += 2) {
+        events.push(cases[i]);
+        fns.push((0, _base.Fn)(cases[i + 1]));
+      }
       return this.B(function () {
         if (!updated) {
           var ev = undefined;
@@ -762,10 +784,10 @@ var App = (function () {
           onPostPacth(function () {
             return updated = false;
           });
-          for (var i = 0; i < cases.length - 1; i += 2) {
-            ev = _this4.findEvent(cases[i]);
+          for (var i = 0; i < events.length; i++) {
+            ev = _this4.findEvent(events[i]);
             if (ev) {
-              acc = cases[i + 1](acc, ev.data);
+              acc = fns[i](acc, ev.data);
               return acc;
             }
           }
@@ -900,13 +922,14 @@ var Event = (function () {
 
   // constructor a : (String, App, Number, a) -> Event a
 
-  function Event(id, app, time, data) {
+  function Event(id, app, time, data, domEvent) {
     _classCallCheck(this, Event);
 
     this.id = id;
     this.app = app;
     this.time = time;
     this.data = data;
+    this.domEvent = domEvent;
   }
 
   _createClass(Event, [{
@@ -914,7 +937,7 @@ var Event = (function () {
 
     // map : (Event a, a -> b) -> Event b
     value: function map(f) {
-      return new Event(this.id, this.app, this.time, f(this.data));
+      return new Event(this.id, this.app, this.time, f(this.data, this.domEvent), this.domEvent);
     }
   }]);
 
@@ -967,14 +990,26 @@ var Subscription = (function () {
       }, this.match);
     }
   }, {
+    key: "tap",
+
+    // tap : Subscription a, (a -> ()), Subscription a
+    value: function tap(action) {
+      var _this3 = this;
+
+      return new Subscription(this.id, this.app, function (ev) {
+        action(ev);
+        return _this3.handler(ev);
+      }, this.match);
+    }
+  }, {
     key: "filter",
 
     // filter : (Subscription a, a -> aBool) -> Subscription a
     value: function filter(p) {
-      var _this3 = this;
+      var _this4 = this;
 
       return new Subscription(this.id, this.app, this.handler, function (ev) {
-        return _this3.match(ev) && p(ev.data);
+        return _this4.match(ev) && p(ev.data);
       });
     }
   }, {
@@ -982,12 +1017,12 @@ var Subscription = (function () {
 
     // merge : (Subscription a, Subscription b) -> Subscription a | b
     value: function merge(sub2) {
-      var _this4 = this;
+      var _this5 = this;
 
       return new Subscription(this.id, this.app, function (ev) {
-        return _this4.match(ev) ? _this4.handler(ev) : sub2.handler(ev);
+        return _this5.match(ev) ? _this5.handler(ev) : sub2.handler(ev);
       }, function (ev) {
-        return _this4.match(ev) || sub2.match(ev);
+        return _this5.match(ev) || sub2.match(ev);
       });
     }
   }]);

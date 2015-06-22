@@ -18,6 +18,19 @@ class Subscription {
     return new Subscription(this.id, this.app, ev => this.handler(ev).map(f), this.match );
   }
   
+  // tap : Subscription a, (a -> ()), Subscription a
+  tap(action) {
+    return new Subscription(
+      this.id, 
+      this.app, 
+      ev => {
+        action(ev);
+        return this.handler(ev);
+      },
+      this.match 
+    );
+  }
+  
   // filter : (Subscription a, a -> aBool) -> Subscription a
   filter(p) {
     return new Subscription(this.id, this.app, this.handler, ev => this.match(ev) && p(ev.data) );

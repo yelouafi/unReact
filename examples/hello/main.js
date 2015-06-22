@@ -2,7 +2,7 @@ import App from '../../src/app';
 import h from 'snabbdom/h';
 
 const app = new App();
-const yourName = app.scanB((_, e) => e.target.value, '', app.on('input$'));
+const yourName = app.step('', app.on('input$').map(e => e.target.value));
   
 app.view = () =>
   h('div', [
