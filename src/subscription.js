@@ -9,26 +9,13 @@ class Subscription {
     this.id = id;
     this.app = app;
     this.handler = Fn(handler);
-    this.match = match || (ev => ev && ev.id === this.id && this.app === ev.app);
+    this.match = match;
   }
   
   // map : Subscription a, (a -> b), Subscription b
   map(f) {
     f = Fn(f);
     return new Subscription(this.id, this.app, ev => this.handler(ev).map(f), this.match );
-  }
-  
-  // tap : Subscription a, (a -> ()), Subscription a
-  tap(action) {
-    return new Subscription(
-      this.id, 
-      this.app, 
-      ev => {
-        action(ev);
-        return this.handler(ev);
-      },
-      this.match 
-    );
   }
   
   // filter : (Subscription a, a -> aBool) -> Subscription a
@@ -38,14 +25,28 @@ class Subscription {
   
   // merge : (Subscription a, Subscription b) -> Subscription a | b
   merge(sub2) {
-    return new Subscription(
-      this.id, 
-      this.app,
-      ev => this.match(ev) ? this.handler(ev) : sub2.handler(ev),
-      ev => this.match(ev) || sub2.match(ev)
-    );
+    return Subscription.merge(this, sub2);
   }
   
+}
+
+Subscription.merge = (...subs) => {
+  
+  let match = ev => {
+    for (var i = 0; i < subs.length; i++) {
+      if( subs[i].match(ev) )
+        return i;
+    }
+    return -1;
+  }
+  
+  let idx;
+  return new Subscription(
+      null, 
+      null,
+      ev => (idx = match(ev)) >= 0  ? subs[idx].handler(ev) : void(0),
+      ev => match(ev) >= 0
+    ); 
 }
 
 export default Subscription;

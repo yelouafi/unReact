@@ -5,8 +5,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'd
 
 var _srcApp = require('../../../src/app');
 
-var _srcApp2 = _interopRequireDefault(_srcApp);
-
 var _snabbdomH = require('snabbdom/h');
 
 var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
@@ -15,43 +13,50 @@ var _task = require('./task');
 
 var _task2 = _interopRequireDefault(_task);
 
-var app = new _srcApp2['default'](),
-    post = _srcApp2['default'].post;
+var _srcBase = require('../../../src/base');
+
+var _utils = require('./utils');
+
+var app = new _srcApp.App();
 
 var id = 0;
-var value = function value(ev) {
-  return ev.target.value;
-};
+
 var leftTodos = function leftTodos(todos) {
   return todos.filter(function (todo) {
     return !todo.done();
   });
 };
-var toggleAll$ = app.on('toggleAll$').map(function (ev) {
-  return ev.target.checked;
-});
-var enter$ = app.on('keydown$').filter(function (ev) {
-  return ev.keyCode === 13;
-});
+var toggleAll$ = app.on('toggleAll').map(_utils.targetChecked);
+var $enter = app.publish('enter');
 
-app.todos = app.arrayB({
-  add: enter$.map(value).map(function (title) {
-    return (0, _task2['default'])(++id, title, toggleAll$);
-  }),
-  remove: post.on('remove$'),
-  other: app.on('clearDone$').map(function () {
-    return leftTodos;
-  })
-});
+app.todos = (0, _srcApp.step)([], app.on('enter').map(function (title) {
+  return app.todos(-1).concat((0, _task2['default'])(++id, title, toggleAll$, app));
+}), app.on('remove').map(function (todo) {
+  return (0, _srcBase.remove)(app.todos(-1), todo);
+}), app.on('clearDone').map(function (_) {
+  return leftTodos(app.todos(-1));
+}));
 
-app.input = app.scanB(function (_, e) {
-  return e.keyCode === 13 ? '' : e.target.value;
-}, '', app.on('keydown$'));
-app.activeView = app.scanB(function () {
+//app.input = step('', app.on('keydown').map( e => e.keyCode === 13 ? '' : e.target.value) );
+app.input = '';
+var onInput = function onInput(e) {
+  if (e.keyCode === 13) {
+    app.input = '';
+    $enter(e.target.value);
+  } else {
+    app.input = e.target.value;
+  }
+};
+
+function clear(oldVnode, vnode) {
+  if (app.input == '') vnode.elm.value = '';
+}
+
+app.activeView = (0, _srcApp.step)('all', app.on('viewChange').map(function (_) {
   return window.location.hash.substr(2) || 'all';
-}, 'all', app.on('viewChange$'));
+}));
 
-window.addEventListener('hashchange', app.publish('viewChange$'));
+window.addEventListener('hashchange', app.publish('viewChange'));
 
 app.view = function () {
   var todos = app.todos(),
@@ -65,22 +70,21 @@ app.view = function () {
     return todo.done();
   });
   return (0, _snabbdomH2['default'])('section.todoapp', [(0, _snabbdomH2['default'])('header.header', [(0, _snabbdomH2['default'])('h1', 'todos'), (0, _snabbdomH2['default'])('input#new-todo.new-todo', {
-    props: { placeholder: 'What needs to be done?', value: app.input() },
-    on: { keydown: app.publish('keydown$') }
+    props: { placeholder: 'What needs to be done?', value: app.input },
+    on: { keydown: onInput },
+    hook: { update: clear }
   })]), (0, _snabbdomH2['default'])('section.main', {
     style: { display: hasTodos ? 'block' : 'none' }
-  }, [(0, _snabbdomH2['default'])('input.toggle-all', { props: { type: 'checkbox', checked: left === 0 }, on: { click: app.publish('toggleAll$') } }), (0, _snabbdomH2['default'])('ul.todo-list', filteredTodos.map(function (todo) {
+  }, [(0, _snabbdomH2['default'])('input.toggle-all', { props: { type: 'checkbox', checked: left === 0 }, on: { click: app.publish('toggleAll') } }), (0, _snabbdomH2['default'])('ul.todo-list', filteredTodos.map(function (todo) {
     return todo.view();
   }))]), (0, _snabbdomH2['default'])('footer.footer', {
     style: { display: hasTodos ? 'block' : 'none' }
-  }, [(0, _snabbdomH2['default'])('span.todo-count', [(0, _snabbdomH2['default'])('strong', left), ' item' + (left === 1 ? '' : 's') + ' left']), (0, _snabbdomH2['default'])('ul.filters', [(0, _snabbdomH2['default'])('li', [(0, _snabbdomH2['default'])('a', { 'class': { selected: app.activeView() === 'all' }, props: { href: '#/' } }, 'All')]), (0, _snabbdomH2['default'])('li', [(0, _snabbdomH2['default'])('a', { 'class': { selected: app.activeView() === 'active' }, props: { href: '#/active' } }, 'Active')]), (0, _snabbdomH2['default'])('li', [(0, _snabbdomH2['default'])('a', { 'class': { selected: app.activeView() === 'completed' }, props: { href: '#/completed' } }, 'Completed')])]), (0, _snabbdomH2['default'])('button.clear-completed', { on: { click: app.publish('clearDone$') } }, 'Clear completed')])]);
+  }, [(0, _snabbdomH2['default'])('span.todo-count', [(0, _snabbdomH2['default'])('strong', left), ' item' + (left === 1 ? '' : 's') + ' left']), (0, _snabbdomH2['default'])('ul.filters', [(0, _snabbdomH2['default'])('li', [(0, _snabbdomH2['default'])('a', { 'class': { selected: app.activeView() === 'all' }, props: { href: '#/' } }, 'All')]), (0, _snabbdomH2['default'])('li', [(0, _snabbdomH2['default'])('a', { 'class': { selected: app.activeView() === 'active' }, props: { href: '#/active' } }, 'Active')]), (0, _snabbdomH2['default'])('li', [(0, _snabbdomH2['default'])('a', { 'class': { selected: app.activeView() === 'completed' }, props: { href: '#/completed' } }, 'Completed')])]), (0, _snabbdomH2['default'])('button.clear-completed', { on: { click: app.publish('clearDone') } }, 'Clear completed')])]);
 };
 
-window.addEventListener('DOMContentLoaded', function () {
-  app.mount('.todoapp');
-});
+app.mount('.todoapp');
 
-},{"../../../src/app":11,"./task":2,"snabbdom/h":3}],2:[function(require,module,exports){
+},{"../../../src/app":12,"../../../src/base":13,"./task":2,"./utils":3,"snabbdom/h":4}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -91,32 +95,27 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'd
 
 var _srcApp = require('../../../src/app');
 
-var _srcApp2 = _interopRequireDefault(_srcApp);
-
 var _snabbdomH = require('snabbdom/h');
 
 var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
 
-function task(id, title, toggleAll$) {
+var _utils = require('./utils');
 
-  var app = new _srcApp2['default'](),
-      post = _srcApp2['default'].post;
+function task(id, title, toggleAll$, channel) {
+
+  var app = new _srcApp.App();
+
+  var $enter = app.publish('enter');
+  var onInput = function onInput(e) {
+    if (e.keyCode === 13) $enter(e.target.value);
+  };
 
   app.id = id;
-  app.title = app.scanB(function (_, ev) {
-    return ev.target.value;
-  }, title, app.on('enter$'));
-  app.done = app.when(false, [app.on('toggle$'), function (v, _) {
-    return !v;
-  }, toggleAll$, function (_, v) {
-    return v;
-  }]);
+  app.title = (0, _srcApp.step)(title, app.on('enter'));
 
-  var editing = app.when(false, [app.on('startEditing$'), function () {
-    return true;
-  }, app.on('stopEditing$').merge(app.on('enter$')), function () {
-    return false;
-  }]);
+  app.done = (0, _srcApp.step)(false, app.on('toggle').map(_utils.targetChecked), toggleAll$);
+
+  var editing = (0, _srcApp.step)(false, app.on('startEditing').map(_utils.kTrue), app.on('stopEditing').merge(app.on('enter')).map(_utils.kFalse));
 
   function focus(oldVnode, vnode) {
     if (oldVnode.data['class'].editing === false && vnode.data['class'].editing === true) {
@@ -131,16 +130,14 @@ function task(id, title, toggleAll$) {
       key: app.id
     }, [(0, _snabbdomH2['default'])('div.view', [(0, _snabbdomH2['default'])('input.toggle', {
       props: { checked: app.done(), type: 'checkbox' },
-      on: { click: app.publish('toggle$') }
+      on: { click: app.publish('toggle') }
     }), (0, _snabbdomH2['default'])('label', {
-      on: { dblclick: app.publish('startEditing$') }
-    }, app.title()), (0, _snabbdomH2['default'])('button.destroy', { on: { click: post.publish('remove$', app) } })]), (0, _snabbdomH2['default'])('input.edit', {
+      on: { dblclick: app.publish('startEditing') }
+    }, app.title()), (0, _snabbdomH2['default'])('button.destroy', { on: { click: channel.publish('remove', app) } })]), (0, _snabbdomH2['default'])('input.edit', {
       props: { value: app.title() },
       on: {
-        blur: app.publish('stopEditing$'),
-        keydown: app.publishIf('enter$', function (ev) {
-          return ev.keyCode === 13;
-        })
+        blur: app.publish('stopEditing'),
+        keydown: onInput
       }
     })]);
   };
@@ -151,7 +148,36 @@ function task(id, title, toggleAll$) {
 exports['default'] = task;
 module.exports = exports['default'];
 
-},{"../../../src/app":11,"snabbdom/h":3}],3:[function(require,module,exports){
+},{"../../../src/app":12,"./utils":3,"snabbdom/h":4}],3:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+var targetProp = function targetProp(prop) {
+  return function (ev) {
+    return ev.target[prop];
+  };
+};
+
+exports.targetProp = targetProp;
+var targetValue = targetProp('value');
+exports.targetValue = targetValue;
+var targetChecked = targetProp('checked');
+
+exports.targetChecked = targetChecked;
+var konst = function konst(val) {
+  return function () {
+    return val;
+  };
+};
+exports.konst = konst;
+var kFalse = konst(false);
+exports.kFalse = kFalse;
+var kTrue = konst(true);
+exports.kTrue = kTrue;
+
+},{}],4:[function(require,module,exports){
 var VNode = require('./vnode');
 var is = require('./is');
 
@@ -174,13 +200,13 @@ module.exports = function h(sel, b, c) {
   return VNode(sel, data, children, text, undefined);
 };
 
-},{"./is":4,"./vnode":10}],4:[function(require,module,exports){
+},{"./is":5,"./vnode":11}],5:[function(require,module,exports){
 module.exports = {
   array: Array.isArray,
   primitive: function(s) { return typeof s === 'string' || typeof s === 'number'; },
 };
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 function updateClass(oldVnode, vnode) {
   var cur, name, elm = vnode.elm,
       oldClass = oldVnode.data.class || {},
@@ -195,7 +221,7 @@ function updateClass(oldVnode, vnode) {
 
 module.exports = {create: updateClass, update: updateClass};
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var is = require('../is');
 
 function arrInvoker(arr) {
@@ -234,7 +260,7 @@ function updateEventListeners(oldVnode, vnode) {
 
 module.exports = {create: updateEventListeners, update: updateEventListeners};
 
-},{"../is":4}],7:[function(require,module,exports){
+},{"../is":5}],8:[function(require,module,exports){
 function updateProps(oldVnode, vnode) {
   var key, cur, old, elm = vnode.elm,
       oldProps = oldVnode.data.props || {}, props = vnode.data.props || {};
@@ -249,7 +275,7 @@ function updateProps(oldVnode, vnode) {
 
 module.exports = {create: updateProps, update: updateProps};
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var raf = requestAnimationFrame || setTimeout;
 var nextFrame = function(fn) { raf(function() { raf(fn); }); };
 
@@ -311,7 +337,7 @@ function applyRemoveStyle(vnode, rm) {
 
 module.exports = {create: updateStyle, update: updateStyle, destroy: applyDestroyStyle, remove: applyRemoveStyle};
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 // jshint newcap: false
 /* global require, module, document, Element */
 'use strict';
@@ -538,14 +564,14 @@ function init(modules) {
 
 module.exports = {init: init};
 
-},{"./is":4,"./vnode":10}],10:[function(require,module,exports){
+},{"./is":5,"./vnode":11}],11:[function(require,module,exports){
 module.exports = function(sel, data, children, text, elm) {
   var key = data === undefined ? undefined : data.key;
   return {sel: sel, data: data, children: children,
           text: text, elm: elm, key: key};
 };
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -554,11 +580,11 @@ Object.defineProperty(exports, '__esModule', {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+exports.step = step;
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-var _base = require('./base');
 
 var _event = require('./event');
 
@@ -572,95 +598,56 @@ var _snabbdom = require('snabbdom');
 
 var _snabbdom2 = _interopRequireDefault(_snabbdom);
 
-var _snabbdomH = require('snabbdom/h');
-
-var _snabbdomH2 = _interopRequireDefault(_snabbdomH);
-
 var patch = _snabbdom2['default'].init([// Init patch function with choosen modules
 require('snabbdom/modules/class'), // makes it easy to toggle classes
 require('snabbdom/modules/props'), // for setting properties on DOM elements
 require('snabbdom/modules/style'), // handles styling on elements with support for animations
-require('snabbdom/modules/eventlisteners'), // attaches event listeners
-{ post: doPostPatch }]);
+require('snabbdom/modules/eventlisteners')]);
 
-var postPatchQueue = [];
-function onPostPacth(cb) {
-  postPatchQueue.push(cb);
+var postEvalQueue = [];
+function onPostEval(cb) {
+  postEvalQueue.push(cb);
 }
 
-function doPostPatch() {
-  for (var i = 0; i < postPatchQueue.length; i++) {
-    postPatchQueue[i]();
+function doPostEval() {
+  for (var i = 0; i < postEvalQueue.length; i++) {
+    postEvalQueue[i]();
   }
-  postPatchQueue = [];
+  postEvalQueue = [];
 }
 
-var eagerBehs = [];
-function updatedEagerBehs() {
-  for (var i = 0, len = eagerBehs.length; i < len; i++) {
-    eagerBehs[i]();
+var actions = [];
+var currentEvent = null;
+
+function matchEvent(sub) {
+  if (!sub.event) {
+    if (sub.match(currentEvent)) {
+      sub.event = sub.handler(currentEvent);
+      onPostEval(function () {
+        return sub.event = null;
+      });
+    }
   }
+  return sub.event;
 }
 
-// t : Number
-// B a : t -> a
-// Beh : (App, () -> a) -> B a
-function Beh(app, f) {
-
-  function b() {
-    return f();
+var frameRequested = false;
+var lastVNode = {};
+function update() {
+  var app = App.root;
+  lastVNode.value = app.view();
+  doPostEval();
+  if (!frameRequested) {
+    window.requestAnimationFrame(function () {
+      frameRequested = false;
+      app.vnode = patch(app.vnode, lastVNode.value);
+    });
+    frameRequested = true;
   }
-
-  b.$$beh = true;
-  b.keepAlive = function () {
-    eagerBehs.push(b);return b;
-  };
-
-  b.map = function (f) {
-    return Beh(app, function () {
-      return f(b());
-    });
-  };
-
-  b['switch'] = function (sub) {
-    var curB = b,
-        updated = undefined;
-    return Beh(app, function () {
-      if (!updated) {
-        var ev = app.findEvent(sub);
-        if (ev) {
-          curB = ev.data && ev.data.$$beh ? ev.data : app.constB(ev.data);
-        }
-        updated = true;
-        onPostPacth(function () {
-          return updated = false;
-        });
-      }
-      return curB();
-    });
-  };
-
-  b.until = function (sub) {
-    var curB = b,
-        ok;
-    return Beh(app, function () {
-      if (ok) return curB();
-      var ev = app.findEvent(sub);
-      if (ev) {
-        curB = ev.data.$$beh ? ev.data : app.constB(ev.data);
-        ok = true;
-      }
-      return curB();
-    });
-  };
-
-  return b;
 }
 
 var App = (function () {
-  // constructor : App -> App
-
-  function App(parent) {
+  function App() {
     _classCallCheck(this, App);
   }
 
@@ -668,180 +655,91 @@ var App = (function () {
     key: 'on',
 
     // on : eventId<a> -> Subscription a
-    value: function on(eventId, app) {
-      return new _subscription2['default'](eventId, app || this);
+    value: function on(eventId) {
+      var _this = this;
+
+      return new _subscription2['default'](eventId, this, null, function (ev) {
+        return ev && ev.id === eventId && _this === ev.app;
+      });
     }
   }, {
-    key: 'view',
-    value: function view() {
-      return (0, _snabbdomH2['default'])('h1', 'Hello FRP');
-    }
-  }, {
-    key: 'mount',
-    value: function mount(elm) {
-      elm = elm instanceof Element ? elm : document.querySelector(elm);
-      if (!(elm instanceof Element)) throw 'App.mount need a valid DOM Element as argument';
-      App.root = this;
-      this.elm = patch(elm, this.view());
+    key: 'tap',
+    value: function tap(eventId, action) {
+      actions.push({ eventId: eventId, app: this, action: action });
     }
   }, {
     key: 'publish',
     value: function publish(id, data) {
-      var _this = this;
-
-      var hasData = arguments.length > 1;
-      return function (ev) {
-        var root = App.root;
-        root.event = new _event2['default'](id, _this, Date.now(), hasData ? data : ev, ev);
-        updatedEagerBehs();
-        if (root.elm) root.elm = patch(root.elm, root.view());
-      };
-    }
-  }, {
-    key: 'publishIf',
-    value: function publishIf(id, pred, data) {
       var _this2 = this;
 
-      var hasData = arguments.length > 2;
+      var hasData = arguments.length > 1;
+
       return function (ev) {
-        if (!pred(ev)) return;
-        var root = App.root;
-        root.event = new _event2['default'](id, _this2, Date.now(), hasData ? data : ev);
-        updatedEagerBehs();
-        if (root.elm) root.elm = patch(root.elm, root.view());
+        onPostEval(function () {
+          return currentEvent = null;
+        });
+        //1- create event
+        currentEvent = new _event2['default'](id, _this2, Date.now(), hasData ? data : ev, ev);
+
+        //2-notify listeners
+        for (var i = 0, len = actions.length; i < len; i++) {
+          var a = actions[i];
+          if (a.eventId === id && a.app === _this2) a.action(currentEvent);
+        }
+
+        //3- update UI
+        update();
       };
     }
   }, {
-    key: 'findEvent',
-    value: function findEvent(sub) {
-      if (!sub.event) {
-        var root = App.root;
-        if (sub.match(root.event)) {
-          sub.event = sub.handler(root.event);
-          onPostPacth(function () {
-            return sub.event = null;
-          });
-        }
-      }
-      return sub.event;
-    }
-  }, {
-    key: 'B',
-    value: function B(f) {
-      return Beh(this, f);
-    }
-  }, {
-    key: 'constB',
-    value: function constB(v) {
-      return this.B((0, _base.Const)(v));
-    }
-  }, {
-    key: 'step',
-    value: function step(start, sub) {
-      return this.scanB(function (_, v) {
-        return v;
-      }, start, sub);
-    }
-  }, {
-    key: 'scanB',
-    value: function scanB(f, acc, sub) {
-      var _this3 = this;
+    key: 'mount',
 
-      var updated = undefined;
-      return this.B(function () {
-        if (!updated) {
-          var ev = _this3.findEvent(sub);
-          if (ev) acc = f(acc, ev.data);
-          updated = true;
-          onPostPacth(function () {
-            return updated = false;
-          });
-        }
-        return acc;
-      });
-    }
-  }, {
-    key: 'when',
-
-    // cases : [(Subscription a , a -> b)]
-    value: function when(acc, cases) {
-      var _this4 = this;
-
-      var updated = undefined,
-          events = [],
-          fns = [];
-      for (var i = 0; i < cases.length - 1; i += 2) {
-        events.push(cases[i]);
-        fns.push((0, _base.Fn)(cases[i + 1]));
-      }
-      return this.B(function () {
-        if (!updated) {
-          var ev = undefined;
-          updated = true;
-          onPostPacth(function () {
-            return updated = false;
-          });
-          for (var i = 0; i < events.length; i++) {
-            ev = _this4.findEvent(events[i]);
-            if (ev) {
-              acc = fns[i](acc, ev.data);
-              return acc;
-            }
-          }
-        }
-        return acc;
-      });
-    }
-  }, {
-    key: 'arrayB',
-    value: function arrayB(events) {
-      var state = arguments[1] === undefined ? [] : arguments[1];
-
-      var cases = [];
-      if (events.add) {
-        cases.push(events.add);
-        cases.push(_base.add);
-      }
-      if (events.remove) {
-        cases.push(events.remove);
-        cases.push(_base.remove);
-      }
-      if (events.reverse) {
-        cases.push(events.reverse);
-        cases.push(function (arr) {
-          return arr.slice().reverse();
-        });
-      }
-      if (events.other) {
-        cases.push(events.other);
-        cases.push(function (arr, fn) {
-          return fn(arr);
-        });
-      }
-      return this.when(state, cases);
-    }
-  }, {
-    key: 'prop',
-    value: function prop(val) {
-      function p() {
-        return val;
-      }
-      p.set = function (v) {
-        return val = v;
-      };
-      return p;
+    // App lifecycle : mount, update, unmount
+    value: function mount(elm) {
+      elm = elm instanceof Element ? elm : document.querySelector(elm);
+      if (!(elm instanceof Element)) throw 'App.mount needs a valid DOM Element as argument';
+      this.vnode = elm;
+      App.root = this;
+      update();
     }
   }]);
 
   return App;
 })();
 
-App.post = new App();
+exports.App = App;
 
-exports['default'] = App;
-module.exports = exports['default'];
+function step(acc) {
+  for (var _len = arguments.length, subs = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    subs[_key - 1] = arguments[_key];
+  }
 
-},{"./base":12,"./event":13,"./subscription":14,"snabbdom":9,"snabbdom/h":3,"snabbdom/modules/class":5,"snabbdom/modules/eventlisteners":6,"snabbdom/modules/props":7,"snabbdom/modules/style":8}],12:[function(require,module,exports){
+  var updated = undefined,
+      prevAcc = acc;
+  return function (prev) {
+    if (prev) return prevAcc;
+    if (!updated) {
+      for (var i = 0; i < subs.length; i++) {
+        var sub = subs[i];
+        var ev = matchEvent(sub);
+        if (ev) {
+          acc = ev.data;
+          break;
+        }
+      }
+      updated = true;
+      onPostEval(function () {
+        updated = false;
+        prevAcc = acc;
+      });
+    }
+    return acc;
+  };
+}
+
+// attaches event listeners
+
+},{"./event":14,"./subscription":15,"snabbdom":10,"snabbdom/modules/class":6,"snabbdom/modules/eventlisteners":7,"snabbdom/modules/props":8,"snabbdom/modules/style":9}],13:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -863,7 +761,7 @@ var Fn = function Fn(v) {
 
 exports.Fn = Fn;
 var isUndef = function isUndef(v) {
-  return v === undefined;
+  return v === undefined || v === null;
 };
 exports.isUndef = isUndef;
 var isArray = Array.isArray;
@@ -886,8 +784,18 @@ var eachKey = function eachKey(obj, cb) {
     return cb(key, obj[key]);
   });
 };
-
 exports.eachKey = eachKey;
+var extend = Object.assign || function (target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i];
+    eachKey(source, function (key, val) {
+      return target[key] = val;
+    });
+  }
+  return target;
+};
+
+exports.extend = extend;
 var add = function add(arr, el) {
   return arr.concat(el);
 };
@@ -904,7 +812,7 @@ var remove = function remove(arr, el) {
 };
 exports.remove = remove;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -919,14 +827,14 @@ var Event = (function () {
 
   // constructor a : (String, App, Number, a) -> Event a
 
-  function Event(id, app, time, data, domEvent) {
+  function Event(id, app, time, data, source) {
     _classCallCheck(this, Event);
 
     this.id = id;
     this.app = app;
     this.time = time;
     this.data = data;
-    this.domEvent = domEvent;
+    this.source = source;
   }
 
   _createClass(Event, [{
@@ -934,7 +842,7 @@ var Event = (function () {
 
     // map : (Event a, a -> b) -> Event b
     value: function map(f) {
-      return new Event(this.id, this.app, this.time, f(this.data, this.domEvent), this.domEvent);
+      return new Event(this.id, this.app, this.time, f(this.data, this.source), this.source);
     }
   }]);
 
@@ -944,7 +852,7 @@ var Event = (function () {
 exports["default"] = Event;
 module.exports = exports["default"];
 
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -962,16 +870,12 @@ var Subscription = (function () {
   // constructor : (String, App, Event a -> Event b) -> Subscription b
 
   function Subscription(id, app, handler, match) {
-    var _this = this;
-
     _classCallCheck(this, Subscription);
 
     this.id = id;
     this.app = app;
     this.handler = (0, _base.Fn)(handler);
-    this.match = match || function (ev) {
-      return ev && ev.id === _this.id && _this.app === ev.app;
-    };
+    this.match = match;
   }
 
   _createClass(Subscription, [{
@@ -979,23 +883,11 @@ var Subscription = (function () {
 
     // map : Subscription a, (a -> b), Subscription b
     value: function map(f) {
-      var _this2 = this;
+      var _this = this;
 
       f = (0, _base.Fn)(f);
       return new Subscription(this.id, this.app, function (ev) {
-        return _this2.handler(ev).map(f);
-      }, this.match);
-    }
-  }, {
-    key: "tap",
-
-    // tap : Subscription a, (a -> ()), Subscription a
-    value: function tap(action) {
-      var _this3 = this;
-
-      return new Subscription(this.id, this.app, function (ev) {
-        action(ev);
-        return _this3.handler(ev);
+        return _this.handler(ev).map(f);
       }, this.match);
     }
   }, {
@@ -1003,10 +895,10 @@ var Subscription = (function () {
 
     // filter : (Subscription a, a -> aBool) -> Subscription a
     value: function filter(p) {
-      var _this4 = this;
+      var _this2 = this;
 
       return new Subscription(this.id, this.app, this.handler, function (ev) {
-        return _this4.match(ev) && p(ev.data);
+        return _this2.match(ev) && p(ev.data);
       });
     }
   }, {
@@ -1014,20 +906,34 @@ var Subscription = (function () {
 
     // merge : (Subscription a, Subscription b) -> Subscription a | b
     value: function merge(sub2) {
-      var _this5 = this;
-
-      return new Subscription(this.id, this.app, function (ev) {
-        return _this5.match(ev) ? _this5.handler(ev) : sub2.handler(ev);
-      }, function (ev) {
-        return _this5.match(ev) || sub2.match(ev);
-      });
+      return Subscription.merge(this, sub2);
     }
   }]);
 
   return Subscription;
 })();
 
+Subscription.merge = function () {
+  for (var _len = arguments.length, subs = Array(_len), _key = 0; _key < _len; _key++) {
+    subs[_key] = arguments[_key];
+  }
+
+  var match = function match(ev) {
+    for (var i = 0; i < subs.length; i++) {
+      if (subs[i].match(ev)) return i;
+    }
+    return -1;
+  };
+
+  var idx = undefined;
+  return new Subscription(null, null, function (ev) {
+    return (idx = match(ev)) >= 0 ? subs[idx].handler(ev) : void 0;
+  }, function (ev) {
+    return match(ev) >= 0;
+  });
+};
+
 exports["default"] = Subscription;
 module.exports = exports["default"];
 
-},{"./base":12}]},{},[1]);
+},{"./base":13}]},{},[1]);

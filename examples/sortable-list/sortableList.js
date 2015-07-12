@@ -1,94 +1,85 @@
-import App from '../../src/app';
+import { App, step } from '../../src/app';
 import h from 'snabbdom/h';
 
 function sortableList(sItems) {
 
-  const ITEM_AFTER = "$$after$$"
-  const move = (arr, elm, srcIdx, targetIdx) => {
+  const move = (arr, elm, targetIdx) => {
+    const srcIdx = arr.indexOf(elm);
+    if (srcIdx === targetIdx || srcIdx <0 || targetIdx < 0)
+      return arr;
     let newIdx = srcIdx > targetIdx ? targetIdx : targetIdx - 1,
         copy = arr.slice();
         
     copy.splice(srcIdx, 1);
     copy.splice(newIdx, 0, elm);
     return copy;
-  }
+  };
   
-  const app = new App(),
+  const app = new App();
   
-        dragStart$ = app.on('dragStart$').tap( ev => {
-          ev.domEvent.dataTransfer.effectAllowed = 'move';
-          ev.domEvent.dataTransfer.setData("text/html", ev.domEvent.currentTarget); // Firefox fix
-        }),
+  app.tap('dragStart', ev => {
+    const domEvent = ev.source;
+    domEvent.dataTransfer.effectAllowed = 'move';
+    domEvent.dataTransfer.setData("text/html", domEvent.currentTarget);
+  });
+  
+  app.tap('dragOver',  ev => ev.source.preventDefault() );
+  
+  const dragSource = step(null, app.on('dragStart') );
+  
+  const yAdjust = ev => 
+      ev.clientY - ev.target.offsetTop <= ev.target.offsetHeight / 2 ? 0 : 1;
+  
+  const dropIndex = step(null,
+    app.on('dragOver').map( (item, ev) =>
+      item === 'placeholder' ? 
+        dropIndex(-1)  
+      : items().indexOf(item) + yAdjust(ev)
+    )
+  ),
         
-        dragOver$ = app.on('dragOver$').tap( ev => {
-          ev.domEvent.preventDefault();
-        }),
-        dragEnd$ = app.on('dragEnd$'),
-        
-        dragSource = app.step(null, dragStart$),
-        
-        dragTarget = app.when(null, [
-          dragOver$, (prev, ev) => {
-            let target = ev.target, id = target.dataset.id;
-            if(id) {
-              if(id === 'placeholder')
-                return prev;  
-                
-              const relY = ev.clientY - target.offsetTop;
-              const height = target.offsetHeight / 2;
-              if(relY <= height) return id;
-              const itms = items(), idx = itms.indexOf(id) + 1;
-              return idx < itms.length ? itms[idx] : ITEM_AFTER;    
-            }
-          },
-        ]),
-        
-        isDragOver = app.when(false, [
-          dragOver$, true,
-          dragEnd$, false
-        ]),
-        
-        items = app.scanB((acc, _) => {
-          let source = dragSource(),
-              target = dragTarget(),
-              srcIdx = acc.indexOf(source),
-              targetIdx = target === ITEM_AFTER ? acc.length : acc.indexOf(target)
-          
-          return (srcIdx !== targetIdx &&  srcIdx >= 0 && targetIdx >= 0) ?
-                    move(acc, source, srcIdx, targetIdx) : acc;
-        },  sItems, dragEnd$);
-    
-  function setDataId(oldVnode, vnode) {
-    vnode.elm.dataset.id = vnode.data.key;
-  }  
+  isDragOver = step(false,
+    app.on('dragOver').map( _ => true),
+    app.on('dragEnd').map( _ => false)
+  ),
+      
+  items = step(sItems,
+    app.on('dragEnd').map( _ => move(items(-1), dragSource(), dropIndex()) )
+  );
   
   const li = (it, i, source, isOver) =>
     h('li', { 
-          key: it,
-          style: { display: (it === source && isOver) ?  'none' : 'block' },
-          props: { draggable: true } ,
-          on: { dragstart: app.publish('dragStart$', it), dragend: app.publish('dragEnd$') },
-          hook: {create: setDataId},
-        },  
-        it);
+      key: it,
+      style: { display: (it === source && isOver) ?  'none' : 'block' },
+      props: { draggable: true } ,
+      on: { 
+        dragstart: app.publish('dragStart', it), 
+        dragover : app.publish('dragOver', it), 
+        dragend: app.publish('dragEnd') 
+      }
+    },  
+    it);
   
   app.view = () => {
-    const aItems = items(), source = dragSource(),  target = dragTarget(), isOver = isDragOver(),
-          targetIdx = target === ITEM_AFTER ? aItems.length : aItems.indexOf(target);
-          
-    let fstSection = targetIdx >= 0 && isOver  ? aItems.slice(0, targetIdx) : aItems,
-        sndSection = targetIdx >= 0 && isOver  ? aItems.slice(targetIdx) : [];
+    const aItems      = items(), 
+          source      = dragSource(),  
+          isOver      = isDragOver(),
+          targetIdx   = dropIndex(),
+          fstSection  = targetIdx >= 0 && isOver  ? aItems.slice(0, targetIdx) : aItems,
+          sndSection  = targetIdx >= 0 && isOver  ? aItems.slice(targetIdx) : [];
         
-    return h('ul', { on: { dragover: app.publish('dragOver$') } }, 
-      fstSection.map((it, i) => li(it, i, source, isOver))
-        .concat(h('li.placeholder', { 
-          key: 'placeholder',
-          style: { display: targetIdx < 0 || !isOver ? 'none' : 'block' },
-          hook: {create: setDataId}
-        }))
-        .concat(sndSection.map((it, i) => li(it, i, source, isOver)))
-      );
-  }
+    return h('ul',
+    
+    fstSection.map((it, i) => li(it, i, source, isOver))
+    .concat(
+      h('li.placeholder', { 
+        key: 'placeholder',
+        style: { display: !isOver ? 'none' : 'block' },
+        on: { dragover: app.publish('dragOver', 'placeholder') }
+      }))
+      .concat(sndSection.map((it, i) => li(it, i, source, isOver)))
+    );
+  };
     
     
   return app;

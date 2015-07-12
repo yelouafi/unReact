@@ -1,4 +1,4 @@
-import App from '../../src/app';
+import { App } from '../../src/app';
 import h from 'snabbdom/h';
 import sortableList from './sortableList';
 
@@ -12,6 +12,4 @@ app.view = () =>
     colorList.view()
   ]);
   
-window.addEventListener('DOMContentLoaded', () => {
-  app.mount('#container');
-});
+app.mount('#container');

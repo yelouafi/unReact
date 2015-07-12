@@ -1,0 +1,23 @@
+.rod {
+  width: 150px;
+  background-color: #eeeeee;
+  height: 150px;
+  display: table-cell;
+  vertical-align: bottom;
+  border: 1px solid black;
+  margin: 4px;
+}
+
+ul {
+  list-style: none;
+  margin:0;
+  padding:0
+}
+
+.disk {
+  background-color: darkgray;
+  border-radius: 10px;
+  height: 20px;
+  margin: auto;
+  border: 1px solid black;
+}

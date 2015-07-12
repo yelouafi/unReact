@@ -1,31 +1,27 @@
-import App from '../../../src/app';
+import { App, step } from '../../../src/app';
 import h from 'snabbdom/h';
 
-let id = 1;
-function counter(reset$) {
+function counter(channel, reset$) {
 
-  const app = new App(), post = App.post;
+  const app = new App();
   
-  app.id = id++;
-  const counter = app.when(0, [
-    app.on('inc$'), acc => acc+1,
-    app.on('dec$'), acc => acc-1,
-    reset$, () => 0
-  ]);
+  const counter = step(0,
+    app.on('inc').map( _ => counter(-1) + 1),
+    app.on('dec').map( _ => counter(-1) - 1),
+    reset$.map(_ => 0)
+  );
     
   const countStyle = {  
     fontSize:   '20px',
     fontFamily: 'monospace',
-    width:      '50px',
-    textAlign:  'center'
   };
     
   app.view = () =>
-    h('div', { key: id}, [
-      h('button', { on: {click: app.publish('dec$') } }, '–'),
-      h('span', {style: countStyle}, counter() + `(${app.id})`),
-      h('button', { on: {click: app.publish('inc$') } }, '+'),
-      h('button', {on: {click: post.publish('remove$', app)}}, 'X'),
+    h('div.counter', [
+      h('button', { on: {click: app.publish('dec') } }, '–'),
+      h('span', {style: countStyle}, counter()),
+      h('button', { on: {click: app.publish('inc') } }, '+'),
+      h('button', { on: {click: channel.publish('remove', app) } }, 'X'),
     ]);
     
   return app;

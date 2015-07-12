@@ -1,13 +1,12 @@
-import App from '../../src/app';
+import { App } from '../../src/app';
 import h from 'snabbdom/h';
 import counter from './counter';
-import switcher from './switcher';
 import tabs from './tabs';
 
 const app = new App();
 const myTabs = tabs({
-  Counter   : counter(),
-  Switcher  : switcher(),
+  Counter1   : counter(),
+  Counter2  : counter(),
 });
 
 app.view = () => h('div', [
@@ -15,6 +14,4 @@ app.view = () => h('div', [
   myTabs.view()
 ])
     
-window.addEventListener('DOMContentLoaded', () => {
-  app.mount('#container');
-});
+app.mount('#container');

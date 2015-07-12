@@ -1,12 +1,12 @@
-import App from '../../../src/app';
+import { App, step } from '../../../src/app';
 import h from 'snabbdom/h';
 
 const app = new App();
 
-const counter = app.when(0, [
-  app.on('inc$'), (acc, _) => acc+1,
-  app.on('dec$'), (acc, _) => acc-1
-]);
+let counter = step(0, 
+  app.on('inc').map( _ => counter(-1) + 1),
+  app.on('dec').map( _ => counter(-1) - 1 )  
+);
   
 const countStyle = {  
   fontSize:   '20px',
@@ -14,14 +14,13 @@ const countStyle = {
   width:      '50px',
   textAlign:  'center'
 };
+
   
 app.view = () =>
   h('div', {style: countStyle}, [
-    h('button', { on: {click: app.publish('dec$') } }, '–'),
+    h('button', { on: {click: app.publish('dec') } }, '–'),
     h('div', {style: countStyle}, counter()),
-    h('button', { on: {click: app.publish('inc$') } }, '+'),
+    h('button', { on: {click: app.publish('inc') } }, '+'),
   ]);
     
-window.addEventListener('DOMContentLoaded', () => {
-  app.mount('#container');
-});
+app.mount('#container');

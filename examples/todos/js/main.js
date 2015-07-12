@@ -1,25 +1,44 @@
-import App from '../../../src/app';
+"use strict";
+
+import { App, step } from '../../../src/app';
 import h from 'snabbdom/h';
 import task from './task';
+import { remove } from '../../../src/base';
+import { targetValue, targetChecked } from './utils';
 
-const app = new App(), post = App.post;
+const app = new App();
 
 let id = 0;
-const value = ev => ev.target.value;
+
 const leftTodos = todos => todos.filter( todo => !todo.done() );
-const toggleAll$ = app.on('toggleAll$').map( ev => ev.target.checked );
-const enter$ = app.on('keydown$').filter(ev => ev.keyCode === 13);
+const toggleAll$ = app.on('toggleAll').map(targetChecked);
+const $enter = app.publish('enter');
 
-app.todos = app.arrayB({
-  add     : enter$.map(value).map( title => task(++id, title, toggleAll$ )),
-  remove  : post.on('remove$'),
-  other   : app.on('clearDone$').map(() => leftTodos)
-});
+app.todos = step([],
+  app.on('enter').map( title => app.todos(-1).concat(task(++id, title, toggleAll$, app)) ),
+  app.on('remove').map( todo => remove(app.todos(-1), todo) ),
+  app.on('clearDone').map( _ => leftTodos(app.todos(-1)) )
+);
 
-app.input = app.scanB((_, e) => e.keyCode === 13 ? '' : e.target.value  ,'', app.on('keydown$'));
-app.activeView = app.scanB(() => window.location.hash.substr(2) || 'all', 'all', app.on('viewChange$'));
+//app.input = step('', app.on('keydown').map( e => e.keyCode === 13 ? '' : e.target.value) );
+app.input = '';
+const onInput = e => {
+  if(e.keyCode === 13) {
+    app.input = '';
+    $enter(e.target.value);
+  } else {
+    app.input = e.target.value;
+  }
+}
 
-window.addEventListener("hashchange", app.publish('viewChange$') );
+function clear(oldVnode, vnode) {
+  if(app.input == '')
+    vnode.elm.value = '';
+}
+
+app.activeView = step('all', app.on('viewChange').map( _ => window.location.hash.substr(2) || 'all'));
+
+window.addEventListener("hashchange", app.publish('viewChange') );
 
 app.view = () => {
   const todos = app.todos(),
@@ -32,14 +51,15 @@ app.view = () => {
     h('header.header', [
       h('h1', 'todos'),
       h('input#new-todo.new-todo', {
-        props: {placeholder: 'What needs to be done?', value: app.input()},
-        on: { keydown: app.publish('keydown$')},
+        props: {placeholder: 'What needs to be done?', value: app.input},
+        on: { keydown: onInput},
+        hook: {update: clear},
       }),
     ]),
     h('section.main', {
       style: {display: hasTodos ? 'block' : 'none'}
     }, [
-      h('input.toggle-all', {props: {type: 'checkbox', checked: left === 0}, on: {click: app.publish('toggleAll$')}}),
+      h('input.toggle-all', {props: {type: 'checkbox', checked: left === 0}, on: {click: app.publish('toggleAll')}}),
       h('ul.todo-list', filteredTodos.map( todo => todo.view() )),
     ]),
     h('footer.footer', {
@@ -51,12 +71,9 @@ app.view = () => {
         h('li', [h('a', {class: {selected: app.activeView() === 'active'}, props: {href: '#/active'}}, 'Active')]),
         h('li', [h('a', {class: {selected: app.activeView() === 'completed'}, props: {href: '#/completed'}}, 'Completed')]),
       ]),
-      h('button.clear-completed', {on: {click: app.publish('clearDone$')}}, 'Clear completed'),
+      h('button.clear-completed', {on: {click: app.publish('clearDone')}}, 'Clear completed'),
     ])
   ]);
 };
 
-
-window.addEventListener('DOMContentLoaded', () => {
-  app.mount('.todoapp');
-});
+app.mount('.todoapp');

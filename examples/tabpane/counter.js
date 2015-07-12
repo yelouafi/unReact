@@ -1,14 +1,14 @@
-import App from '../../src/app';
+import { App, step } from '../../src/app';
 import h from 'snabbdom/h';
 
 function counter() {
 
   const app = new App();
   
-  const counter = app.when(0, [
-    app.on('inc$'), acc => acc+1,
-    app.on('dec$'), acc => acc-1
-  ]);
+  const counter = step(0,
+    app.on('inc').map( _ => counter(-1) + 1),
+    app.on('dec').map( _ => counter(-1) - 1)
+  );
     
   const countStyle = {  
     fontSize:   '20px',
@@ -18,10 +18,10 @@ function counter() {
   };
     
   app.view = () =>
-    h('div', {style: countStyle}, [
-      h('button', { on: {click: app.publish('dec$') } }, '–'),
+    h('div.counter', {style: countStyle}, [
+      h('button', { on: {click: app.publish('dec') } }, '–'),
       h('div', {style: countStyle}, counter()),
-      h('button', { on: {click: app.publish('inc$') } }, '+'),
+      h('button', { on: {click: app.publish('inc') } }, '+'),
     ]);
     
   return app;
