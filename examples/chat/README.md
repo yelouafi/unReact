@@ -21,6 +21,6 @@ The `allMessages` behavior is semantically a function of time which descirbes th
 
 There is no need to `waitFor` in unReact; Behaviors are truly functions, including reactive ones; in the above example the `allMessages` depends on the `threadItems.currentThread` behavior. Simply calling `currentThread()` will return the actual value (ie after currentThread reacts to the `thread.click` message). Dependency management and unidirectional data flow are naturally ensured through normal function calls.
 
-unReact acheives this by adopting a pull/lazy model of event handling; see [explications here](https://github.com/yelouafi/unReact)
+unReact acheives this by adopting a pull/lazy model of event handling; see [explications here](https://github.com/yelouafi/unReact#why-unreact-)
 
 
