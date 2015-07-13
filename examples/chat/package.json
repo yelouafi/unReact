@@ -1,0 +1,11 @@
+{
+  "name": "counter2",
+  "version": "0.0.0",
+  "description": "FRP demo using snabbdom virtual DOM",
+  "repository": "",
+  "author": "Yassine Elouafi <yelouafi@gmail.com>",
+  "dependencies": {},
+  "scripts": {
+    "build": "browserify js/main.js -t babelify --outfile build.js"
+  }
+}
