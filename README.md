@@ -72,7 +72,7 @@ But the problem with functions is that they are a *pull* based concept; ie you m
 
 unReact adresses this by adopting a lazy model of events; in the example above, when the user clicks for example on the `-` button, the app *publishes* the `dec` message: there is no listeners or listener notification, the app just put the message in a central place. Then proceed immediately to the evaluation of the app view function. that's the main function on your application.
 
-When the view function invokes the `counter()` getter, the `counter` behavior *matches* the current message with its 2 subscriptions, since the the current message `dec$` matches its second subscription, it'll *update* itself.
+When the view function invokes the `counter()` getter, the `counter` behavior *matches* the current message with its 2 subscriptions, since the the current message `dec` matches its second subscription, it'll *update* itself.
 
 So in simple words, an unReact application is just a single big function that gets reevaluated on each interesting event. events are considered like changing inputs to that function.
 
