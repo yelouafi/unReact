@@ -31,21 +31,21 @@ So in practice, we're not really un-reactive, we just react to event in *lazy* w
 Let's see how it works through a basic example. We have a `counter` *Behavior* and presents the user with 2 buttons, one for incrementing and the 2nd for decrementing values of the counter.
 
 ```javascript
-
-// first create an App
 import { App, step } from '../../../src/app';
 import h from 'snabbdom/h';
 
+//1- create the App
 const app = new App();
 
+//2- define the Behaviors
 let counter = step(0, 
   app.on('inc').map( _ => counter(-1) + 1),
   app.on('dec').map( _ => counter(-1) - 1 )  
 );
 
-  
+//3- define the View
 app.view = () =>
-  h('div', {style: countStyle}, [
+  h('div', {}, [
     h('button', { on: {click: app.publish('dec') } }, '–'),
     h('div', counter() ),
     h('button', { on: {click: app.publish('inc') } }, '+'),
