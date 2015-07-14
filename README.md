@@ -80,5 +80,5 @@ For more examples of use [see here](https://github.com/yelouafi/unReact/tree/mas
 
 There is an implementation of the canonical [Todo MVC](https://github.com/yelouafi/unReact/tree/master/examples/todos) application. Although i'm not sure if the MVC world holds for this case.
 
-Also you may be ineterested in the [Chat demo](https://github.com/yelouafi/unReact/tree/master/examples/chat); this is an adaptaion from the [React/Flux demo app]((https://github.com/facebook/flux/tree/master/examples/flux-chat). You can see how unReact compares to React Flux.
+Also you may be ineterested in the [Chat demo](https://github.com/yelouafi/unReact/tree/master/examples/chat); this is an adaptaion from the [React/Flux demo app](https://github.com/facebook/flux/tree/master/examples/flux-chat). You can see how unReact compares to React Flux.
 
