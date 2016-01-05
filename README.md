@@ -1,5 +1,5 @@
 
-## Note : This is still a Work In Progress
+## Note : This is an Experiment
 # unReact
 
 A prototype implementation of a Pull based FRP JavaScript frontend.
