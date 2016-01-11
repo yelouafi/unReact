@@ -1,5 +1,5 @@
 
-## Note : This is an Experiment
+## Note : This is not a ready-to-use library. It's an Exploratory project for lazy event handling 
 # unReact
 
 A prototype implementation of a Pull based FRP JavaScript frontend.
