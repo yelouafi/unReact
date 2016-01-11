@@ -21,7 +21,7 @@ React and similar frameworks use a *push* model for event handling, ie. when a D
 3- event listeners updates the application state (possibly via an intermediate layer like Flux or Redux)  
 4- the system re-evaluates the view function and patches the DOM  
 
-unReact uses a *pull* based model for events, when an event fires, the event is not forwarded to listeners but instead *published* on a central place. When the framework re-render the UI, interested subscribers, called *Behaviors* can check against the published event to decide if an update should take place. In other terms events are *pulled* during the view evaluation phase.  So the process is:
+unReact uses a *pull* based model for events, when an event fires, the event is not forwarded to listeners (There are no listeners anyway) but instead *published* on a central place. When the framework re-render the UI, interested subscribers, called *Behaviors* can check against the published event to decide if an update should take place. In other terms events are *pulled* during the view evaluation phase.  So the process is:
 
 1- a DOM event is fired  
 2- a message is published on the application  
