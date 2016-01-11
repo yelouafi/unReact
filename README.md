@@ -21,11 +21,16 @@ React and similar frameworks use a *push* model for event handling, ie. when a D
 3- event listeners updates the application state (possibly via an intermediate layer like Flux or Redux)  
 4- the system re-evaluates the view function and patches the DOM  
 
-unReact uses a *pull* based model for events, when an event fires, the event is not forwarded to listeners (There are no listeners anyway) but instead *published* on a central place. When the framework re-render the UI, interested subscribers, called *Behaviors* can check against the published event to decide if an update should take place. In other terms events are *pulled* during the view evaluation phase.  So the process is:
+unReact uses a *pull* based model for events, when an event fires, the event is not forwarded to listeners (There are no listeners anyway) but instead *published* on a central place. By published, I mean the current event becomes like an input arguement for the next step, which is to invoke the view (.i.e. render) function. All event handling happens inside the this view function.
 
-1- a DOM event is fired  
-2- a message is published on the application  
-3- the system re-evaluates the view function and patches the DOM (the pull phase)  
+The applciation state is represented by functions called *Behaviors*. When the framework invokes the view function. The top view, as well as child view functions, get the state by invoking the needed Behaviors. And those Behaviors check the current pusblished event to decide if they have to update their internal state. 
+
+The main advantage of this approach is there no longer problem of order. In the traditional push system, we have to ensure that imperative state updates are performed in the ocrrect order (the famous Flux's `waitFor`). In the pull model of UnReact, all updates are automatically performed in the correct order: Because Behaviors are just functions, when a Behavior depends on another Behavior, it justs invoke that Behavior, then the invoked Behavior will update its internal state (if needed) in reaction to the current event. Behaviors automatically memoize their results for the same events, so if a Behavior is invoked multiple times within the same event loop, it'll update itself only once. All subsequent invocations will return the first result.
+
+So the process is:
+
+1- a DOM event is fired
+2- the system re-evaluates the view function and patches the DOM (the pull phase)  
 
 So in practice, we're not really un-reactive, we just react to event in *lazy* way.
 
