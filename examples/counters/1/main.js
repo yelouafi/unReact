@@ -1,26 +1,37 @@
-import { App, step } from '../../../src/app';
-import h from 'snabbdom/h';
+/** @jsx html */
+import 'babel-polyfill'
+import { html } from 'snabbdom-jsx';
+import { mount, Event, stepper } from '../../../src';
 
-const app = new App();
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms))
+}
 
-let counter = step(0, 
-  app.on('inc').map( _ => counter(-1) + 1),
-  app.on('dec').map( _ => counter(-1) - 1 )  
-);
-  
-const countStyle = {  
-  fontSize:   '20px',
-  fontFamily: 'monospace',
-  width:      '50px',
-  textAlign:  'center'
-};
+const inc = Event()
+const dec = Event()
+const incAsync = Event()
 
-  
-app.view = () =>
-  h('div', {style: countStyle}, [
-    h('button', { on: {click: app.publish('dec') } }, '–'),
-    h('div', {style: countStyle}, counter()),
-    h('button', { on: {click: app.publish('inc') } }, '+'),
-  ]);
-    
-app.mount('#container');
+const counter = stepper(0,
+  inc.map(() => counter() + 1),
+  dec.map(() => counter() - 1)
+)
+
+async function incAsyncWatch() {
+  while(true) {
+    await incAsync.next()
+    await sleep(1000)
+    inc.fire()
+  }
+}
+
+
+const render = ({e}) =>
+  <div>
+    <button on-click={inc.fire} >+</button>
+    <div>{ counter(e) }</div>
+    <button on-click={dec.fire} >-</button>
+    <button on-click={incAsync.fire} >+ (async)</button>
+  </div>
+
+mount(render, '#container');
+incAsyncWatch()
